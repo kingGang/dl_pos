@@ -1,4 +1,6 @@
 // import 'package:flutter/material.dart';
+import 'package:dl_pos/pages/mrket/antistock.dart';
+
 import '../pages/mine/mine.dart';
 import '../tabs/tabs.dart';
 import '../pages/loading/loading.dart';
@@ -7,6 +9,7 @@ final dlRoutes={
     '/':(context)=>Tabs(),
     '/loading':(context)=>LoadingPage(),
     '/test':(context)=>Mine(),
+    '/antistock':(context)=>AntiStockList(),
   };
 
 //命名路由，传值固定写法

@@ -81,7 +81,7 @@ class _RawKeyTextFieldState extends State<RawKeyTextField> {
 
               switch (rawKeyEventDataAndroid.keyCode) {
                 case 66: //KEY_ENTER
-                  print(_controller.text);
+                  // print(_controller.text);
                   setState(() {
                     // isRead=false;
                     // SystemChannels.textInput.invokeMethod('TextInput.hide');

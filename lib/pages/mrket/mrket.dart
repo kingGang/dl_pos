@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bugly/flutter_bugly.dart';
 // import 'package:install_plugin/install_plugin.dart';
 import 'package:path_provider/path_provider.dart';
+
 // import 'package:permission_handler/permission_handler.dart';
 
 class Mrket extends StatefulWidget {
@@ -148,6 +149,12 @@ class _MrketState extends State<Mrket> {
             _printDailyStatement();
           },
           child: Text("打印日结单"),
+        ),
+        RaisedButton(
+          onPressed: () {
+            Navigator.of(context).pushNamed("/antistock");
+          },
+          child: Text("防串货"),
         )
       ],
     ));
