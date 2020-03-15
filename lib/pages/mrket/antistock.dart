@@ -1,4 +1,5 @@
 import 'package:dl_pos/view/rawkeytextfield.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class AntiStockList extends StatefulWidget {
@@ -34,8 +35,36 @@ class _AntiStockListState extends State<AntiStockList> {
           ),
           Expanded(child: Container(
         child: Scrollbar(
-      child: ListView.separated(itemBuilder: (context,item){
-        return buildListData(context, strItems[item], iconItems[item], subTitleItems[item]);
+      child: ListView.separated(itemBuilder: (context,index){
+        final item=strItems[index];
+        return Dismissible(key: Key(item), 
+         dragStartBehavior: DragStartBehavior.down,
+          direction: DismissDirection.endToStart,
+          background: Container(color: Colors.red,
+          child: Text("向左滑动删除",
+          style:TextStyle(
+            color: Colors.white,
+                  fontSize: 22.0,
+                  fontWeight: FontWeight.w700
+          )),),
+        child: ListTile(
+            title: Text(strItems[index]),
+            subtitle: Text(subTitleItems[index]),
+            onTap: (){
+              
+            },
+          ),
+          onDismissed: (direction){
+            setState(() {
+              strItems.removeAt(index);
+              subTitleItems.removeAt(index);
+            });
+            Scaffold.of(context).hideCurrentSnackBar();
+            Scaffold.of(context).showSnackBar(SnackBar(
+              content: Text('删除成功...'),
+            ));
+          },
+         );
       }, separatorBuilder: (BuildContext context, int index) => new Divider(),  itemCount: strItems.length)
       ),
       ),)
@@ -101,7 +130,8 @@ Widget buildListData(BuildContext context, String titleItem, Icon iconItem, Stri
       subtitle: new Text(
         subTitleItem,
       ),
-      trailing: new Icon(Icons.keyboard_arrow_right),
+      trailing: new Icon(Icons.remove_circle),
+      // selected: true,
       // 创建点击事件
       onTap: () {
         showDialog(
