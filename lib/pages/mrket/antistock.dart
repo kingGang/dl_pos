@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:dl_pos/model/antiinfo.dart';
+import 'package:dl_pos/uitls/dioutil.dart';
 import 'package:dl_pos/view/rawkeytextfield.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -23,22 +24,16 @@ class AntiStockList extends StatefulWidget {
 }
 
 Future<void> _getList() async {
-  Response resp = await http
-      .get("/pos/mobile/antistock/eventno/:event_no", queryParameters: {
-    "event_no": antiInfo.eventNO,
-  });
-  if (resp.statusCode == 200) {
-    dynamic items=resp.data["data"];
-    if (resp.data["ok"]&&items!=null) {
-      
-      for (int i=0;i<items.length;i++){
-        antiInfo.antiCodes.add(items[i]["anti_code"]);
+    DioUtil().get("/pos/mobile/antistock/eventno/:event_no",(data){
+      dynamic items = data["data"];
+      if (data["ok"] && items != null) {
+        for (int i = 0; i < items.length; i++) {
+          antiInfo.antiCodes.add(items[i]["anti_code"]);
+        }
       }
-    }
-    
-  } else {
-    print("http状态错误;");
-  }
+    }, queryParameters: {
+      "event_no": antiInfo.eventNO,
+});  
 }
 
 class _AntiStockListState extends State<AntiStockList> {
@@ -49,9 +44,7 @@ class _AntiStockListState extends State<AntiStockList> {
     _getList();
     Future.delayed(Duration(seconds: 2), () {
       if (this.mounted) {
-        setState(() {
-          
-        });
+        setState(() {});
       }
     });
   }
