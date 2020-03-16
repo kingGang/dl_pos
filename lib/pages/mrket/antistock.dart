@@ -1,10 +1,44 @@
+import 'package:dio/dio.dart';
+import 'package:dl_pos/model/antiinfo.dart';
 import 'package:dl_pos/view/rawkeytextfield.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+var antiInfo = new AntiStockInfo();
+var http = Dio(BaseOptions(baseUrl: BaseUrl));
+// const String BaseUrl ="https://care.lingo8.cn/";
+const String BaseUrl = "https://pos.api.caredaily.com/";
+
 class AntiStockList extends StatefulWidget {
+  AntiStockList({String eventName, String eventNo}) {
+    antiInfo.eventName = eventName;
+    antiInfo.eventNO = eventNo;
+    antiInfo.antiCodes = new Set<String>();
+    http.options.headers = {
+      'Authorization': '692072e2-4c85-4e78-b6ba-43adb0983e6f'
+    };
+  }
   @override
   _AntiStockListState createState() => _AntiStockListState();
+}
+
+Future<void> _getList() async {
+  Response resp = await http
+      .get("/pos/mobile/antistock/eventno/:event_no", queryParameters: {
+    "event_no": antiInfo.eventNO,
+  });
+  if (resp.statusCode == 200) {
+    dynamic items=resp.data["data"];
+    if (resp.data["ok"]&&items!=null) {
+      
+      for (int i=0;i<items.length;i++){
+        antiInfo.antiCodes.add(items[i]["anti_code"]);
+      }
+    }
+    
+  } else {
+    print("http状态错误;");
+  }
 }
 
 class _AntiStockListState extends State<AntiStockList> {
@@ -12,80 +46,133 @@ class _AntiStockListState extends State<AntiStockList> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    
+    _getList();
+    Future.delayed(Duration(seconds: 2), () {
+      if (this.mounted) {
+        setState(() {
+          
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    antiInfo.antiCodes.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: Color.fromARGB(0, 0, 0, 0),
-      
-      body:Column(
-        children:<Widget>[
+        // backgroundColor: Color.fromARGB(100, 0, 0, 0),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: Text("防窜货码列表"),
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(Icons.done),
+                onPressed: () {
+                  Navigator.pop(context);
+                })
+          ],
+        ),
+        body: Column(children: <Widget>[
           Container(
-            margin: EdgeInsets.only(top:36),
-            child:RawKeyTextField(inputFinsh: (val){
-              print("扫码值为：$val");
-              setState(() {
-                strItems.insert(0,val);
-                subTitleItems.insert(0,val);
-                iconItems.insert(0,Icon(Icons.access_time));
-              });
-            },)
-          ),
-          Expanded(child: Container(
-        child: Scrollbar(
-      child: ListView.separated(itemBuilder: (context,index){
-        final item=strItems[index];
-        return Dismissible(key: Key(item), 
-         dragStartBehavior: DragStartBehavior.down,
-          direction: DismissDirection.endToStart,
-          background: Container(color: Colors.red,
-          child: Text("向左滑动删除",
-          style:TextStyle(
-            color: Colors.white,
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.w700
-          )),),
-        child: ListTile(
-            title: Text(strItems[index]),
-            subtitle: Text(subTitleItems[index]),
-            onTap: (){
-              
-            },
-          ),
-          onDismissed: (direction){
-            setState(() {
-              strItems.removeAt(index);
-              subTitleItems.removeAt(index);
-            });
-            Scaffold.of(context).hideCurrentSnackBar();
-            Scaffold.of(context).showSnackBar(SnackBar(
-              content: Text('删除成功...'),
-            ));
-          },
-         );
-      }, separatorBuilder: (BuildContext context, int index) => new Divider(),  itemCount: strItems.length)
-      ),
-      ),)
-        ]
-      )
-      );
-    
-    
+              margin: EdgeInsets.only(top: 5, left: 10, right: 10, bottom: 10),
+              child: RawKeyTextField(
+                inputFinsh: (val) async {
+                  print("扫码值为：$val");
+                  if (antiInfo.antiCodes.add(val)) {
+                    print("添加成功");
+                    Response resp = await http.post("/pos/mobile/antistock/add",
+                        data: {
+                          "event_name": antiInfo.eventName,
+                          "event_no": antiInfo.eventNO,
+                          "anti_code": val
+                        });
+                    if (resp.statusCode == 200) {
+                      if (resp.data["ok"]) {
+                        setState(() {});
+                      }
+                      print('$resp.data');
+                    } else {
+                      print("http状态错误;");
+                    }
+                  } else {
+                    print("添加失败");
+                  }
+                },
+              )),
+          Expanded(
+            child: Container(
+              child: Scrollbar(
+                  child: ListView.separated(
+                      itemBuilder: (context, index) {
+                        return Dismissible(
+                          key: Key(UniqueKey().toString()),
+                          dragStartBehavior: DragStartBehavior.down,
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.red,
+                          ),
+                          child: ListTile(
+                            title: Text(antiInfo.antiCodes.elementAt(index)),
+                            // subtitle: Text(subTitleItems[index]),
+                            onTap: () {},
+                          ),
+                          onDismissed: (direction) async {
+                            Response resp = await http.delete(
+                                "/pos/mobile/antistock/eventno/:event_no/anticode/:anti_code",
+                                queryParameters: {
+                                  "event_no": antiInfo.eventNO,
+                                  "anti_code":
+                                      antiInfo.antiCodes.elementAt(index)
+                                });
+                            if (resp.statusCode == 200) {
+                              if (resp.data["ok"]) {
+                                setState(() {
+                                  antiInfo.antiCodes.remove(
+                                      antiInfo.antiCodes.elementAt(index));
+                                });
+                                Scaffold.of(context).hideCurrentSnackBar();
+                                Scaffold.of(context).showSnackBar(SnackBar(
+                                  content: Text('删除成功...'),
+                                ));
+                              }
+                              print('$resp.data');
+                            } else {
+                              print("http状态错误;");
+                            }
+                          },
+                        );
+                      },
+                      separatorBuilder: (BuildContext context, int index) =>
+                          new Divider(),
+                      itemCount: antiInfo.antiCodes.length)),
+            ),
+          )
+        ]));
   }
 }
 
-
 List<String> subTitleItems = <String>[
-    'subTitle: keyboard', 'subTitle: print',
-    'subTitle: router', 'subTitle: pages',
-    'subTitle: zoom_out_map', 'subTitle: zoom_out',
-    'subTitle: youtube_searched_for', 'subTitle: wifi_tethering',
-    'subTitle: wifi_lock', 'subTitle: widgets',
-    'subTitle: weekend', 'subTitle: web',
-    'subTitle: accessible', 'subTitle: ac_unit',
-  ];
+  'subTitle: keyboard',
+  'subTitle: print',
+  'subTitle: router',
+  'subTitle: pages',
+  'subTitle: zoom_out_map',
+  'subTitle: zoom_out',
+  'subTitle: youtube_searched_for',
+  'subTitle: wifi_tethering',
+  'subTitle: wifi_lock',
+  'subTitle: widgets',
+  'subTitle: weekend',
+  'subTitle: web',
+  'subTitle: accessible',
+  'subTitle: ac_unit',
+];
 List<String> strItems = <String>[
   '图标 -> keyboard',
   '图标 -> print',
@@ -120,35 +207,36 @@ List<Icon> iconItems = <Icon>[
   new Icon(Icons.ac_unit),
 ];
 
-Widget buildListData(BuildContext context, String titleItem, Icon iconItem, String subTitleItem) {
-    return new ListTile(
-      leading: iconItem,
-      title: new Text(
-        titleItem,
-        style: TextStyle(fontSize: 14),
-      ),
-      subtitle: new Text(
-        subTitleItem,
-      ),
-      trailing: new Icon(Icons.remove_circle),
-      // selected: true,
-      // 创建点击事件
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return new AlertDialog(
-              title: new Text(
-                'ListViewAlert',
-                style: new TextStyle(
-                  color: Colors.black54,
-                  fontSize: 18.0,
-                ),
+Widget buildListData(BuildContext context, String titleItem, Icon iconItem,
+    String subTitleItem) {
+  return new ListTile(
+    leading: iconItem,
+    title: new Text(
+      titleItem,
+      style: TextStyle(fontSize: 14),
+    ),
+    subtitle: new Text(
+      subTitleItem,
+    ),
+    trailing: new Icon(Icons.remove_circle),
+    // selected: true,
+    // 创建点击事件
+    onTap: () {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return new AlertDialog(
+            title: new Text(
+              'ListViewAlert',
+              style: new TextStyle(
+                color: Colors.black54,
+                fontSize: 18.0,
               ),
-              content: new Text('您选择的item内容为:$titleItem'),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+            content: new Text('您选择的item内容为:$titleItem'),
+          );
+        },
+      );
+    },
+  );
+}

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dl_pos/model/dailystatement.dart';
 import 'package:dl_pos/model/order.dart';
+import 'package:dl_pos/pages/mrket/antistock.dart';
 import 'package:dl_pos/uitls/eventbus.dart';
 import 'package:dl_pos/view/update_dialog.dart';
 import 'package:flutter/material.dart';
@@ -152,7 +153,11 @@ class _MrketState extends State<Mrket> {
         ),
         RaisedButton(
           onPressed: () {
-            Navigator.of(context).pushNamed("/antistock");
+            Navigator.of(context).push(new MaterialPageRoute(
+                builder: (_) => new AntiStockList(
+                      eventName: "销售",
+                      eventNo: "123456789",
+                    )));
           },
           child: Text("防串货"),
         )
@@ -172,7 +177,6 @@ class _MrketState extends State<Mrket> {
 
         _showUpdateDialog(info.newFeature, info.apkUrl, info.upgradeType == 2);
       }
-      
     });
   }
 
